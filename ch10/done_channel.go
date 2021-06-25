@@ -1,22 +1,24 @@
 package main
 
+type searcher func(string) []string
+
 func main() {
 	f := func(s string) []string {
 		return []string{s}
 	}
-	searchers := []func(string) []string{f}
+	searchers := []searcher{f}
 	searchData("", searchers)
 }
-func searchData(s string, searchers []func(string) []string) []string {
+func searchData(data string, processors []searcher) []string {
 	done := make(chan struct{})
 	result := make(chan []string)
-	for _, searcher := range searchers {
-		go func(searcher func(string) []string) {
+	for _, processor := range processors {
+		go func(s searcher) {
 			select {
-			case result <- searcher(s):
+			case result <- s(data):
 			case <-done:
 			}
-		}(searcher)
+		}(processor)
 	}
 	r := <-result
 	close(done)
